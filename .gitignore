@@ -8,3 +8,6 @@ build
 out
 console/org.linkedin.glu.console-webapp/target
 console/org.linkedin.glu.console-webapp/lib
+.classpath
+.project
+.settings

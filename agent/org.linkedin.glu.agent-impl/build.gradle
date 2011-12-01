@@ -35,6 +35,13 @@ dependencies {
   testRuntime spec.external.ivy
 }
 
+eclipseClasspath {
+  whenConfigured { classpath ->
+    classpath.entries.removeAll { entry -> entry.path == 'src/test/resources' && entry.kind == 'src' }
+    
+  }
+}
+
 ideaModule {
   whenConfigured { module ->
     // plugin wrongly add src/test/resources as source folder causing issue when running 

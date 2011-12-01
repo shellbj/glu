@@ -68,6 +68,7 @@ packageIncludesFiles = [
 packageIncludes = fileTree(dir: rootDir, includes: packageIncludesFiles)
 
 allprojects {
+  apply plugin: 'eclipse'
   apply plugin: 'idea'
   group = spec.group
   version = spec.version
@@ -113,8 +114,8 @@ subprojects {
     repositories.restlet.checkconsistency = false
   }
 
-  sourceCompatibility = '1.6'
-  targetCompatibility = '1.6'
+  sourceCompatibility = org.gradle.api.JavaVersion.VERSION_1_6
+  targetCompatibility = org.gradle.api.JavaVersion.VERSION_1_6
 
   buildDir = "${topBuildDir}${project.path.replace(':','/')}".toString()
 }

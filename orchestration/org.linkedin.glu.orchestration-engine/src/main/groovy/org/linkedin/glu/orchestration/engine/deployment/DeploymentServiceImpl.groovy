@@ -32,6 +32,10 @@ import org.slf4j.LoggerFactory
 import org.linkedin.groovy.util.clock.ClosureTimerTask
 import org.linkedin.glu.provisioner.plan.api.IStepCompletionStatus
 
+import javax.mail.*
+import javax.mail.internet.*
+import javax.activation.*
+
 /**
  * System service.
  *
@@ -300,8 +304,76 @@ class DeploymentServiceImpl implements DeploymentService, Startable, Destroyable
                                                                   progressTracker: progressTracker)
       _deployments[id] = currentDeployment
 
+      // email
+      def planXml = new XmlParser().parseText("$planExecution")
+      def mpList = "$planExecution".contains("PARALLEL") ? planXml.parallel : planXml.sequential
+      Set hostList = new HashSet()
+      String mpString = "mountpoints: "
+      mpList.sequential.each{
+        mpString += "\n${it.'@agent'}: ${it.'@mountPoint'}"
+        hostList.add(it.'@mountPoint'.tokenize('/')[0])
+      }
+      Set tolist = "$planExecution".findAll(/[\w]([_\.\-]??[\w])+?@([\w]+\.)+[\w]{2,4}/)
+      def from = 'glu-do-not-reply@orbitz.com'
+      def body = "plan completed:\ndescription: $description\nid: $id\nusername: $username\nsystemId: ${system.id}\n$mpString"
+      def subject = "${description.split()[0]}ed ${hostList} on fabric '${system.fabric}'"
+      def attach = new File("planExecuted_${id}.xml")
+      attach.write("$planExecution}")
+
+      if(!tolist.isEmpty())
+        sendEmail(tolist, from, subject, body, attach)
+      attach.delete()
+
       return currentDeployment
     }
+  }
+
+  private void sendEmail(Set<String> recipients, String from, String subject, String body, File attach)
+  {
+    def host = "mailhost.wm.orbitz.com"
+    def port = "25"
+
+    def props = new Properties()
+    props.put("mail.smtp.host", host)
+    props.put("mail.smtp.user", from)
+    props.put("mail.smtp.port", port)
+  
+    def session = Session.getInstance(props, null)
+    def msg = new MimeMessage(session)
+
+    msg.setSubject(subject)
+    msg.setFrom(new InternetAddress(from))
+    InternetAddress[] addressTo = new InternetAddress[recipients.size()]
+    int i = 0
+    recipients.each {
+      addressTo[i] = new InternetAddress(it)
+      i++
+    }
+    msg.setRecipients(Message.RecipientType.TO, addressTo)
+
+    // Create the message part 
+    BodyPart messageBodyPart = new MimeBodyPart()
+
+    // Fill the message
+    messageBodyPart.setText(body)
+
+    Multipart multipart = new MimeMultipart()
+    multipart.addBodyPart(messageBodyPart)
+
+    // Part two is attachment
+    messageBodyPart = new MimeBodyPart()
+    DataSource source = new FileDataSource(attach)
+    messageBodyPart.setDataHandler(new DataHandler(source))
+    messageBodyPart.setFileName(attach.getName())
+    multipart.addBodyPart(messageBodyPart)
+
+    // Put parts in message
+    msg.setContent(multipart)
+  
+    def transport = session.getTransport("smtp")
+    transport.connect(new Socket(host, port.toInteger()))
+    transport.sendMessage(msg, msg.getAllRecipients())
+    transport.close()
   }
 }
 

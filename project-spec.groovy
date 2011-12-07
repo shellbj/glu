@@ -77,6 +77,7 @@ spec.external = [
     packaging: "tgz"
   ],
   log4j: 'log4j:log4j:1.2.16',
+  mail: 'javax.mail:mail:1.4.4',
   mimeUtil: 'eu.medsea.mimeutil:mime-util:2.1.3',
   restlet: "org.restlet.jse:org.restlet:${spec.versions.restlet}",
   restletExtHttpClient: "org.restlet.jse:org.restlet.ext.httpclient:${spec.versions.restlet}",

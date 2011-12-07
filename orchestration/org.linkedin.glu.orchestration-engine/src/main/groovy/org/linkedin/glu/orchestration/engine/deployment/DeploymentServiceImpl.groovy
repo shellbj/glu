@@ -32,9 +32,14 @@ import org.slf4j.LoggerFactory
 import org.linkedin.groovy.util.clock.ClosureTimerTask
 import org.linkedin.glu.provisioner.plan.api.IStepCompletionStatus
 
-import javax.mail.*
-import javax.mail.internet.*
-import javax.activation.*
+import javax.activation.DataHandler
+import javax.activation.FileDataSource
+import javax.mail.Message
+import javax.mail.Session
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
+import javax.mail.internet.MimeMessage
+import javax.mail.internet.MimeMultipart
 
 /**
  * System service.
@@ -343,26 +348,22 @@ class DeploymentServiceImpl implements DeploymentService, Startable, Destroyable
 
     msg.setSubject(subject)
     msg.setFrom(new InternetAddress(from))
-    InternetAddress[] addressTo = new InternetAddress[recipients.size()]
-    int i = 0
-    recipients.each {
-      addressTo[i] = new InternetAddress(it)
-      i++
-    }
-    msg.setRecipients(Message.RecipientType.TO, addressTo)
+    def addressTo = new ArrayList(recipients.size())
+    recipients.each { addressTo.add(new InternetAddress(it)) }
+    msg.setRecipients(Message.RecipientType.TO, (InternetAddress[]) addressTo.toArray())
 
     // Create the message part 
-    BodyPart messageBodyPart = new MimeBodyPart()
+    MimeBodyPart messageBodyPart = new MimeBodyPart()
 
     // Fill the message
     messageBodyPart.setText(body)
 
-    Multipart multipart = new MimeMultipart()
+    MimeMultipart multipart = new MimeMultipart()
     multipart.addBodyPart(messageBodyPart)
 
     // Part two is attachment
     messageBodyPart = new MimeBodyPart()
-    DataSource source = new FileDataSource(attach)
+    FileDataSource source = new FileDataSource(attach)
     messageBodyPart.setDataHandler(new DataHandler(source))
     messageBodyPart.setFileName(attach.getName())
     multipart.addBodyPart(messageBodyPart)
@@ -376,4 +377,3 @@ class DeploymentServiceImpl implements DeploymentService, Startable, Destroyable
     transport.close()
   }
 }
-

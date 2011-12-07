@@ -19,7 +19,7 @@ apply plugin: 'groovy'
 apply plugin: 'org.linkedin.release'
 
 dependencies {
-  compile group: 'javax.mail', name: 'mail', version: '1.4.4'
+
   compile project(':provisioner:org.linkedin.glu.provisioner-core')
   compile project(':agent:org.linkedin.glu.agent-rest-client')
   compile project(':agent:org.linkedin.glu.agent-tracker')
@@ -27,6 +27,7 @@ dependencies {
   compile spec.external.linkedinUtilsGroovy
 
   groovy spec.external.groovy
+  compile spec.external.mail
   testCompile spec.external.junit
   testRuntime spec.external.slf4jLog4j
 }

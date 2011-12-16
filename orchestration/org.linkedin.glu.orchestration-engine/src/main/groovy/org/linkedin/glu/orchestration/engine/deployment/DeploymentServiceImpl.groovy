@@ -313,15 +313,19 @@ class DeploymentServiceImpl implements DeploymentService, Startable, Destroyable
       def planXml = new XmlParser().parseText("$planExecution")
       def mpList = "$planExecution".contains("PARALLEL") ? planXml.parallel : planXml.sequential
       Set hostList = new HashSet()
-      String mpString = "mountpoints: "
+      String mpString = "<p>These mountpoints are being changed: <ul>"
       mpList.sequential.each{
-        mpString += "\n${it.'@agent'}: ${it.'@mountPoint'}"
+        mpString += "<li>${it.'@agent'}: ${it.'@mountPoint'}</li>"
         hostList.add(it.'@mountPoint'.tokenize('/')[0])
       }
-      Set tolist = "$planExecution".findAll(/[\w]([_\.\-]??[\w])+?@([\w]+\.)+[\w]{2,4}/)
+      Set tolist = "$planExecution".replaceAll('amp;', '').findAll(/[\w]([&_\.\-]??[\w])+?@([\w]+\.)+[\w]{2,4}/)
       def from = 'glu-do-not-reply@orbitz.com'
-      def body = "plan completed:\ndescription: $description\nid: $id\nusername: $username\nsystemId: ${system.id}\n$mpString"
-      def subject = "${description.split()[0]}ed ${hostList} on fabric '${system.fabric}'"
+      def subject = "${description.split()[0]}ing ${hostList} on fabric '${system.fabric}'"
+      def body = """<html><body>
+<p>User '$username' is executing '$description' on fabric '${system.fabric}'.</p>
+${mpString}</ul></p><p>Check progress at <a href=http://${InetAddress.localHost.canonicalHostName}:8080/console/plan/deployments/$id>
+http://${InetAddress.localHost.canonicalHostName}:8080/console/plan/deployments/$id</a></p></body></html>"""
+
       def attach = new File("planExecuted_${id}.xml")
       attach.write("$planExecution}")
 
@@ -356,7 +360,7 @@ class DeploymentServiceImpl implements DeploymentService, Startable, Destroyable
     MimeBodyPart messageBodyPart = new MimeBodyPart()
 
     // Fill the message
-    messageBodyPart.setText(body)
+    messageBodyPart.setContent(body, "text/html");
 
     MimeMultipart multipart = new MimeMultipart()
     multipart.addBodyPart(messageBodyPart)
